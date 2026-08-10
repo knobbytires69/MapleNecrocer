@@ -111,6 +111,28 @@ public partial class AvatarForm : Form
     private List<Rectangle> FrameBound = new();
     public static bool debugDraw = false;
 
+    private class EquipItemData : IDisposable
+    {
+        public string ID;
+        public Bitmap Bmp;
+        public int Level;
+        public int Job;
+
+        public void Dispose()
+        {
+            Bmp?.Dispose();
+        }
+    }
+    private class SearchItemData
+    {
+        public string ID;
+        public string Name;
+        public int Level;
+        public int Job;
+    }
+    private readonly Dictionary<int, List<EquipItemData>> EquipCache = new();
+    private List<SearchItemData> SearchCache = new();
+
 
     void AddInventory()
     {
@@ -484,6 +506,7 @@ public partial class AvatarForm : Form
 
 
     List<string> PartList = new();
+    int CurrentPartIndex = -1;
     private void button1_Click(object sender, EventArgs e)
     {
         MainForm.Instance.ToolTipView.Visible = false;
@@ -526,6 +549,7 @@ public partial class AvatarForm : Form
         for (int i = 1; i <= 20; i++)
             ImageGrids[i].Visible = false;
         ImageGrids[PartIndex].Visible = true;
+        CurrentPartIndex = PartIndex;
 
         if (!PartList.Contains(ButtonText))
         {
@@ -549,7 +573,9 @@ public partial class AvatarForm : Form
             int Num = 0;
             bool InRange(int Low, int High) => (Num >= Low) && (Num <= High);
 
-            Win32.SendMessage(ImageGrids[PartIndex].Handle, false);
+            if (!EquipCache.ContainsKey(PartIndex))
+                EquipCache[PartIndex] = new List<EquipItemData>();
+
             foreach (var img in Dir)
             {
                 if (!Char.IsNumber(img.Text[0]))
@@ -566,7 +592,11 @@ public partial class AvatarForm : Form
                         break;
                 }
 
-                foreach (var Iter in Wz.GetNodeA(Path + img.Text).Nodes)
+                var itemImgNode = Wz.GetNodeA(Path + img.Text);
+                string itemImgPath = Path + img.Text;
+                int itemLevel = Wz.GetInt(itemImgPath + "/info/reqLevel");
+                int itemJob = Wz.GetInt(itemImgPath + "/info/reqJob");
+                foreach (var Iter in itemImgNode.Nodes)
                 {
                     string Left4() => Iter.ImgName().LeftStr(4);
                     Num = Iter.ImgID().ToInt() / 1000;
@@ -622,35 +652,109 @@ public partial class AvatarForm : Form
                     {
                         case "Head":
                             if (Iter.Text == "front")
-                                ImageGrids[PartIndex].Items.Add(img.ImgID(), Iter.GetBmp("head"));
+                                EquipCache[PartIndex].Add(new EquipItemData { ID = img.ImgID(), Bmp = Iter.GetBmp("head"), Level = itemLevel, Job = itemJob });
                             break;
                         case "Body":
                             if (Iter.Text == "stand1")
-                                ImageGrids[PartIndex].Items.Add(img.ImgID(), Iter.GetBmp("0/body"));
+                                EquipCache[PartIndex].Add(new EquipItemData { ID = img.ImgID(), Bmp = Iter.GetBmp("0/body"), Level = itemLevel, Job = itemJob });
                             break;
                         case "Face-1":
                         case "Face-2":
                             if (Iter.Nodes["face"] != null)
-                                ImageGrids[PartIndex].Items.Add(Iter.ImgID(), Iter.GetBmp("face"));
+                                EquipCache[PartIndex].Add(new EquipItemData { ID = Iter.ImgID(), Bmp = Iter.GetBmp("face"), Level = itemLevel, Job = itemJob });
                             break;
                         case "Hair-1":
                         case "Hair-2":
                             if (Iter.Nodes["hairOverHead"] != null)
-                                ImageGrids[PartIndex].Items.Add(Iter.ImgID(), Iter.GetBmp("hairOverHead"));
+                                EquipCache[PartIndex].Add(new EquipItemData { ID = Iter.ImgID(), Bmp = Iter.GetBmp("hairOverHead"), Level = itemLevel, Job = itemJob });
                             break;
                         default:
                             if (Iter.Nodes["icon"] != null)
-                                ImageGrids[PartIndex].Items.Add(Iter.ImgID(), Iter.GetBmp("icon"));
+                                EquipCache[PartIndex].Add(new EquipItemData { ID = Iter.ImgID(), Bmp = Iter.GetBmp("icon"), Level = itemLevel, Job = itemJob });
                             break;
                     }
                 }
 
             }
-            Win32.SendMessage(ImageGrids[PartIndex].Handle, true);
-            ImageGrids[PartIndex].Refresh();
             PartList.Add(ButtonText);
         }
+        PopulateEquipGrid(PartIndex);
 
+    }
+
+    static bool MatchesClass(int reqJob, int selectedClass)
+    {
+        if (selectedClass <= 0) return true;
+        if (reqJob == 0) return true;
+        if (reqJob == -1) return false;
+        return (reqJob & (1 << (selectedClass - 1))) != 0;
+    }
+
+    void PopulateEquipGrid(int partIndex)
+    {
+        if (!EquipCache.ContainsKey(partIndex))
+            return;
+        var grid = ImageGrids[partIndex];
+        var source = EquipCache[partIndex];
+        int selectedClass = ClassComboBox.SelectedIndex;
+        int sortIndex = SortComboBox.SelectedIndex;
+
+        List<EquipItemData> items = source.Where(d => MatchesClass(d.Job, selectedClass)).ToList();
+        if (sortIndex == 1)
+            items = items.OrderBy(d => d.Level).ToList();
+        else if (sortIndex == 2)
+            items = items.OrderByDescending(d => d.Level).ToList();
+
+        Win32.SendMessage(grid.Handle, false);
+        grid.Items.Clear();
+        foreach (var d in items)
+        {
+            grid.Items.Add(d.ID, d.Bmp);
+            var item = grid.Items[grid.Items.Count - 1];
+            item.Text = d.Level > 0 ? $"Lv.{d.Level}" : d.ID;
+            item.FileName = d.ID;
+        }
+        Win32.SendMessage(grid.Handle, true);
+        grid.Refresh();
+    }
+
+    void RebuildSearchGrid()
+    {
+        if (SearchGrid == null || SearchCache == null)
+            return;
+        int selectedClass = ClassComboBox.SelectedIndex;
+        int sortIndex = SortComboBox.SelectedIndex;
+
+        List<SearchItemData> items = SearchCache.Where(d => MatchesClass(d.Job, selectedClass)).ToList();
+        if (sortIndex == 1)
+            items = items.OrderBy(d => d.Level).ToList();
+        else if (sortIndex == 2)
+            items = items.OrderByDescending(d => d.Level).ToList();
+
+        SearchGrid.Rows.Clear();
+        foreach (var d in items)
+        {
+            SearchGrid.Rows.Add(d.ID, " " + d.Name, d.Level, d.Job);
+        }
+    }
+
+    void ApplyFilterAndSort()
+    {
+        if (CurrentPartIndex >= 1 && CurrentPartIndex <= 20 && EquipCache.ContainsKey(CurrentPartIndex))
+            PopulateEquipGrid(CurrentPartIndex);
+        RebuildSearchGrid();
+        if (SearchGridLoaded && SearchGrid != null)
+            SearchGrid.Search(textBox1.Text);
+    }
+
+    private void SortComboBox_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        ApplyFilterAndSort();
+    }
+
+    private void ClassComboBox_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        ApplyFilterAndSort();
     }
 
     private void SaveCharButton_Click(object sender, EventArgs e)
@@ -686,10 +790,16 @@ public partial class AvatarForm : Form
     {
         if (Node.Text == "name")
         {
-            if (Node.ParentNode.Text.Length == 5)
-                SearchGrid.Rows.Add("000" + Node.ParentNode.Text, " " + Node.ToStr());
-            else
-                SearchGrid.Rows.Add("0" + Node.ParentNode.Text, " " + Node.ToStr());
+            string ID = Node.ParentNode.Text.ToInt().ToString();
+            string Dir = Equip.GetDir(ID);
+            string InfoPath = "Character/" + Dir + ID + ".img/info/";
+            SearchCache.Add(new SearchItemData
+            {
+                ID = ID,
+                Name = Node.ToStr(),
+                Level = Wz.GetInt(InfoPath + "reqLevel"),
+                Job = Wz.GetInt(InfoPath + "reqJob")
+            });
         }
         foreach (var Iter in Node.Nodes)
         {
@@ -794,6 +904,23 @@ public partial class AvatarForm : Form
                 if (!SearchGridLoaded)
                 {
                     SearchGrid = new(60, 184, 114, 109, 315, 400, false, tabControl1.TabPages[4]);
+
+                    var levelCol = new DataGridViewTextBoxColumn();
+                    levelCol.HeaderText = "Level";
+                    levelCol.Name = "propLevel";
+                    levelCol.ReadOnly = true;
+                    levelCol.Width = 60;
+                    SearchGrid.Columns.Add(levelCol);
+                    var jobCol = new DataGridViewTextBoxColumn();
+                    jobCol.HeaderText = "Job";
+                    jobCol.Name = "propJob";
+                    jobCol.ReadOnly = true;
+                    jobCol.Visible = false;
+                    SearchGrid.Columns.Add(jobCol);
+
+                    SearchGrid.SearchGrid.Columns.Add((DataGridViewColumn)levelCol.Clone());
+                    SearchGrid.SearchGrid.Columns.Add((DataGridViewColumn)jobCol.Clone());
+
                     SearchGrid.CellClick += (s, e) =>
                     {
                         CellClick(SearchGrid, e);
@@ -871,8 +998,11 @@ public partial class AvatarForm : Form
                             DumpEqpString(Wz.GetNodeA("String/Item.img/Eqp"));
                     }
                     Win32.SendMessage(SearchGrid.Handle, true);
+                    RebuildSearchGrid();
                     SearchGrid.Refresh();
                     SearchGridLoaded = true;
+                    if (!string.IsNullOrEmpty(textBox1.Text))
+                        SearchGrid.Search(textBox1.Text);
                 }
                 // MainForm.Instance.ToolTipView.TopLevel = false;
                 // MainForm.Instance.ToolTipView.IsMdiContainer = false;

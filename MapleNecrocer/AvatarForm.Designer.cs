@@ -13,9 +13,20 @@
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing)
             {
-                components.Dispose();
+                if (components != null)
+                {
+                    components.Dispose();
+                }
+                foreach (var list in EquipCache.Values)
+                {
+                    foreach (var item in list)
+                    {
+                        item.Dispose();
+                    }
+                }
+                EquipCache.Clear();
             }
             base.Dispose(disposing);
         }
@@ -105,6 +116,10 @@
             ShowToolTil_CheckBox = new CheckBox();
             label5 = new Label();
             EarListBox = new ComboBox();
+            SortLabel = new Label();
+            SortComboBox = new ComboBox();
+            ClassLabel = new Label();
+            ClassComboBox = new ComboBox();
             timer1 = new System.Windows.Forms.Timer(components);
             tabControl1.SuspendLayout();
             tabPage2.SuspendLayout();
@@ -1044,6 +1059,52 @@
             EarListBox.TabIndex = 26;
             EarListBox.SelectedIndexChanged += EarListBox_SelectedIndexChanged;
             // 
+            // SortLabel
+            // 
+            SortLabel.AutoSize = true;
+            SortLabel.Font = new Font("Tahoma", 14F, FontStyle.Regular, GraphicsUnit.Pixel);
+            SortLabel.Location = new Point(666, 28);
+            SortLabel.Name = "SortLabel";
+            SortLabel.Size = new Size(26, 17);
+            SortLabel.TabIndex = 27;
+            SortLabel.Text = "Sort";
+            // 
+            // SortComboBox
+            // 
+            SortComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            SortComboBox.Font = new Font("Tahoma", 14F, FontStyle.Regular, GraphicsUnit.Pixel);
+            SortComboBox.FormattingEnabled = true;
+            SortComboBox.Items.AddRange(new object[] { "None", "Level Asc", "Level Desc" });
+            SortComboBox.Location = new Point(692, 25);
+            SortComboBox.Name = "SortComboBox";
+            SortComboBox.Size = new Size(120, 25);
+            SortComboBox.TabIndex = 28;
+            SortComboBox.SelectedIndex = 0;
+            SortComboBox.SelectedIndexChanged += SortComboBox_SelectedIndexChanged;
+            // 
+            // ClassLabel
+            // 
+            ClassLabel.AutoSize = true;
+            ClassLabel.Font = new Font("Tahoma", 14F, FontStyle.Regular, GraphicsUnit.Pixel);
+            ClassLabel.Location = new Point(666, 62);
+            ClassLabel.Name = "ClassLabel";
+            ClassLabel.Size = new Size(35, 17);
+            ClassLabel.TabIndex = 29;
+            ClassLabel.Text = "Class";
+            // 
+            // ClassComboBox
+            // 
+            ClassComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            ClassComboBox.Font = new Font("Tahoma", 14F, FontStyle.Regular, GraphicsUnit.Pixel);
+            ClassComboBox.FormattingEnabled = true;
+            ClassComboBox.Items.AddRange(new object[] { "All", "Warrior", "Mage", "Archer", "Thief", "Pirate" });
+            ClassComboBox.Location = new Point(692, 59);
+            ClassComboBox.Name = "ClassComboBox";
+            ClassComboBox.Size = new Size(120, 25);
+            ClassComboBox.TabIndex = 30;
+            ClassComboBox.SelectedIndex = 0;
+            ClassComboBox.SelectedIndexChanged += ClassComboBox_SelectedIndexChanged;
+            // 
             // timer1
             // 
             timer1.Interval = 10;
@@ -1055,6 +1116,10 @@
             ClientSize = new Size(1130, 929);
             Controls.Add(EarListBox);
             Controls.Add(label5);
+            Controls.Add(ClassComboBox);
+            Controls.Add(ClassLabel);
+            Controls.Add(SortComboBox);
+            Controls.Add(SortLabel);
             Controls.Add(ShowToolTil_CheckBox);
             Controls.Add(comboBox1);
             Controls.Add(label4);
@@ -1155,6 +1220,10 @@
         private CheckBox ShowToolTil_CheckBox;
         private Label label5;
         private ComboBox EarListBox;
+        private Label SortLabel;
+        private ComboBox SortComboBox;
+        private Label ClassLabel;
+        private ComboBox ClassComboBox;
         private TabPage tabPage6;
         private ListBox FrameListBox;
         private Panel panel2;
