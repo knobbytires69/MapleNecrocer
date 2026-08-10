@@ -120,6 +120,27 @@ public class Equip
         int AID = ID.ToInt();
         return ((AID / 10000) - 100).ToString();
     }
+    public static bool MatchesClass(int reqJob, int selectedClass, bool exclusive)
+    {
+        if (selectedClass == 0) return true;
+        if (selectedClass < 1 || selectedClass > 5) return false;
+        int classBit = 1 << (selectedClass - 1);
+        if (reqJob == -1) return false;
+        if (reqJob == 0) return !exclusive;
+        return (reqJob & classBit) != 0;
+    }
+    public static bool IsBasePart(string ID)
+    {
+        switch (GetPart(ID))
+        {
+            case PartName.Head:
+            case PartName.Body:
+            case PartName.Hair:
+            case PartName.Face:
+                return true;
+        }
+        return false;
+    }
     public static Dictionary<string, int> Data = new();
     public static Dictionary<string, string> DataS = new();
 }

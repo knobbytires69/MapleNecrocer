@@ -742,7 +742,8 @@ public static class Wz_NodeExtension3
     }
     public static Bitmap GetBmp(this Wz_Node Node, string Path)
     {
-        return Node.GetNode(Path).ExtractPng();
+        var target = Node?.GetNode(Path);
+        return (target?.Value as Wz_Png)?.ExtractPng();
     }
 
     public static Wz_Node Get2(this Wz_Node Node, string Path)

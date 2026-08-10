@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -36,32 +37,131 @@ namespace MapleNecrocer;
 
 public partial class MainForm : Form
 {
-    public MainForm()
+    public MainForm(string maplePath = null)
     {
-        InitializeComponent();
-        Instance = this;
-        openedWz = new List<Wz_Structure>();
-        PluginManager.WzFileFinding += new FindWzEventHandler(WzFileFinding);
-        if (!System.Windows.Forms.SystemInformation.TerminalServerSession)
+        try
         {
-            var dgvType = this.GetType();
-            var pi = dgvType.GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
-            pi.SetValue(this, true, null);
-        }
-        RenderForm.TopLevel = false;
-        RenderForm.Parent = this;
-        RenderForm.Show();
-        Sound.Init();
-        ToolTipView = new AfrmTooltip();
-        ToolTipView.Visible = true;
-        stringLinker = new StringLinker();
-        ToolTipView.StringLinker = this.stringLinker;
-        //ToolTipView.KeyDown += new KeyEventHandler(afrm_KeyDown);
-        ToolTipView.ShowID = true;
-        ToolTipView.ShowMenu = true;
-        ToolTipView.StartPosition = FormStartPosition.CenterParent;
+            InitializeComponent();
+            Instance = this;
+            openedWz = new List<Wz_Structure>();
+            this.Deactivate += (s, e) => SpriteEngine.Keyboard.WindowActive = false;
+            this.Activated += (s, e) => SpriteEngine.Keyboard.WindowActive = true;
+            PluginManager.WzFileFinding += new FindWzEventHandler(WzFileFinding);
+            if (!System.Windows.Forms.SystemInformation.TerminalServerSession)
+            {
+                var dgvType = this.GetType();
+                var pi = dgvType.GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
+                pi.SetValue(this, true, null);
+            }
+            RenderForm.TopLevel = false;
+            RenderForm.Parent = this;
+            RenderForm.Show();
+            Sound.Init();
+            ToolTipView = new AfrmTooltip();
+            ToolTipView.Visible = true;
+            stringLinker = new StringLinker();
+            ToolTipView.StringLinker = this.stringLinker;
+            //ToolTipView.KeyDown += new KeyEventHandler(afrm_KeyDown);
+            ToolTipView.ShowID = true;
+            ToolTipView.ShowMenu = true;
+            ToolTipView.StartPosition = FormStartPosition.CenterParent;
 
-        //  RenderForm.Show();
+            //  RenderForm.Show();
+            
+            _maplePath = maplePath;
+            this.Load += MainForm_Load;
+        }
+        catch (Exception ex)
+        {
+            WriteError($"Constructor error: {ex}");
+            MessageBox.Show($"Failed to initialize MainForm:\n{ex}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+    
+    private async void AutoLoadWz(string maplePath)
+    {
+        if (string.IsNullOrEmpty(maplePath) || !System.IO.Directory.Exists(maplePath))
+        {
+            var msg = $"MapleStory path does not exist: {maplePath}";
+            WriteError(msg);
+            MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+
+        this.UseWaitCursor = true;
+        try
+        {
+            List<string> findBaseWz;
+            try
+            {
+                findBaseWz = await Task.Run(() =>
+                    SelectFolderForm.Directory.EnumerateFiles(maplePath, "Base.wz;Data.wz").ToList());
+            }
+            catch (Exception ex)
+            {
+                var msg = $"Error locating MapleStory data:\n{ex}";
+                WriteError(msg);
+                MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (!findBaseWz.Any())
+            {
+                var msg = $"No Base.wz or Data.wz found in: {maplePath}";
+                WriteError(msg);
+                MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            WriteError($"Found WZ files, loading...");
+            try
+            {
+                await Task.Run(() =>
+                {
+                    MainForm.Instance.RemoveWz();
+                    MainForm.OpenWZ(findBaseWz.First());
+                });
+            }
+            catch (Exception ex)
+            {
+                var msg = $"Error loading MapleStory data:\n{ex}";
+                WriteError(msg);
+                MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            try
+            {
+                MainForm.Instance.DumpMapIDs();
+
+                var defaultMap = MapNames.Keys.FirstOrDefault(k => k == "910000000");
+                if (defaultMap != null)
+                {
+                    Map.ID = defaultMap;
+                    LoadMap();
+                }
+                WriteError("MapleStory data loaded successfully.");
+            }
+            catch (Exception ex)
+            {
+                var msg = $"Error loading MapleStory data:\n{ex}";
+                WriteError(msg);
+                MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        finally
+        {
+            this.UseWaitCursor = false;
+        }
+    }
+    void WriteError(string message)
+    {
+        try
+        {
+            string logPath = System.IO.Path.Combine(System.Windows.Forms.Application.StartupPath, "error.log");
+            System.IO.File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}\n");
+        }
+        catch { }
     }
     public static RenderForm RenderForm = new RenderForm();
     List<Wz_Structure> openedWz;
@@ -73,6 +173,7 @@ public partial class MainForm : Form
     public AfrmTooltip ToolTipView;
     DefaultLevel skillDefaultLevel = DefaultLevel.Level0;
     int skillInterval = 32;
+    string? _maplePath;
     public void CenterToScreen2()
     {
         this.CenterToScreen();
@@ -92,66 +193,77 @@ public partial class MainForm : Form
 
     public void DumpMapIDs()
     {
-        //  if(Wz.HasNode("Map/Map/Map0"))
-        if (Wz.HasNode("String/Map.img"))
+        try
         {
-            foreach (var Iter in Wz.GetNodes("String/Map.img"))
+            if (Wz.HasNode("String/Map.img"))
             {
-                foreach (var Iter2 in Iter.Nodes)
+                foreach (var Iter in Wz.GetNodes("String/Map.img"))
                 {
-                    string ID = Iter2.Text.PadLeft(9, '0');
-                    var MapName = Iter2.GetStr("mapName");
-                    var StreetName = Iter2.GetStr("streetName");
-                    Map.MapNameList.AddOrReplace(ID, new MapNameRec(ID, MapName, StreetName));
-                    if (!MapNames.ContainsKey(ID))
+                    foreach (var Iter2 in Iter.Nodes)
                     {
-                        MapNames.Add(ID, MapName);
+                        string ID = Iter2.Text?.PadLeft(9, '0') ?? "";
+                        if (string.IsNullOrEmpty(ID))
+                            continue;
+                        var MapName = Iter2.GetStr("mapName");
+                        var StreetName = Iter2.GetStr("streetName");
+                        Map.MapNameList.AddOrReplace(ID, new MapNameRec(ID, MapName, StreetName));
+                        if (!MapNames.ContainsKey(ID))
+                        {
+                            MapNames.Add(ID, MapName);
+                        }
+                    }
+                }
+
+                Win32.SendMessage(MapListBox.Handle, false);
+                if (Wz.HasNode("Map/Map"))
+                {
+                    foreach (var Dir in Wz.GetNodes("Map/Map"))
+                    {
+                        if (LeftStr(Dir.Text, 3) != "Map" && Wz.HasHardCodedStrings == false)
+                            continue;
+                        foreach (var img in Dir.Nodes)
+                        {
+                            if (!Char.IsNumber(img.Text[0]))
+                                continue;
+                            var ID = img.ImgID();
+                            if (MapNames.ContainsKey(ID))
+                                MapListBox.Rows.Add(ID, MapNames[ID]);
+                            else
+                                MapListBox.Rows.Add(ID, "");
+                        }
+                    }
+                }
+            }
+            else if (Wz.HasHardCodedStrings)
+            {
+                Win32.SendMessage(MapListBox.Handle, false);
+                if (Wz.HasNode("Map/Map"))
+                {
+                    foreach (var Iter in Wz.GetNodes("Map/Map"))
+                    {
+                        string ID = Iter.Text?.Replace(".img", "") ?? "";
+                        ID = ID.PadLeft(9, '0');
+                        var MapName = Iter.HasNode("info/mapName") ? Iter.GetStr("info/mapName") : "";
+                        var StreetName = Iter.HasNode("info/streetName") ? Iter.GetStr("info/streetName") : "";
+                        Map.MapNameList.AddOrReplace(ID, new MapNameRec(ID, MapName, StreetName));
+                        if (!MapNames.ContainsKey(ID))
+                        {
+                            MapNames.Add(ID, MapName);
+                            MapListBox.Rows.Add(ID, MapNames[ID]);
+                        }
                     }
                 }
             }
 
-            Win32.SendMessage(MapListBox.Handle, false);
-            foreach (var Dir in Wz.GetNodes("Map/Map"))
-            {
-                if (LeftStr(Dir.Text, 3) != "Map" && Wz.HasHardCodedStrings == false)
-                    continue;
-                foreach (var img in Dir.Nodes)
-                {
-                    if (!Char.IsNumber(img.Text[0]))
-                        continue;
-                    var ID = img.ImgID();
-                    if (MapNames.ContainsKey(ID))
-                        MapListBox.Rows.Add(ID, MapNames[ID]);
-                    else
-                        MapListBox.Rows.Add(ID, "");
-                }
-            }
-
+            Win32.SendMessage(MapListBox.Handle, true);
+            MapListBox.Refresh();
+            tabControl1.Enabled = true;
         }
-        else if (Wz.HasHardCodedStrings)
+        catch (Exception ex)
         {
-            Win32.SendMessage(MapListBox.Handle, false);
-            foreach (var Iter in Wz.GetNodes("Map/Map"))
-            {
-                string ID = Iter.Text.Replace(".img", "");
-                ID = ID.PadLeft(9, '0');
-                var MapName = Iter.HasNode("info/mapName") ? Iter.GetStr("info/mapName") : "";
-                var StreetName = Iter.HasNode("info/streetName") ? Iter.GetStr("info/streetName") : "";
-                Map.MapNameList.AddOrReplace(ID, new MapNameRec(ID, MapName, StreetName));
-                if (!MapNames.ContainsKey(ID))
-                {
-                    MapNames.Add(ID, MapName);
-                    MapListBox.Rows.Add(ID, MapNames[ID]);
-                }
-            }
+            Console.Error.WriteLine($"Error in DumpMapIDs: {ex}");
+            MessageBox.Show($"Error loading map data:\n{ex}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
-
-        // foreach(var i in TreeNode.Nodes["Map"].Nodes["Map"].Nodes)
-        //   MapListBox.Items.Add(i.Text);
-        Win32.SendMessage(MapListBox.Handle, true);
-
-        MapListBox.Refresh();
-        tabControl1.Enabled = true;
     }
     void WzFileFinding(object sender, FindWzEventArgs e)
     {
@@ -818,6 +930,11 @@ public partial class MainForm : Form
         float dpiY = graphics.DpiY;
         DPIUtil.dpiX = dpiX;
         DPIUtil.dpiY = dpiY;
+
+        if (!string.IsNullOrEmpty(_maplePath))
+        {
+            AutoLoadWz(_maplePath);
+        }
     }
 
     private void OpenFolderButton_Click(object sender, EventArgs e)

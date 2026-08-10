@@ -120,6 +120,7 @@
             SortComboBox = new ComboBox();
             ClassLabel = new Label();
             ClassComboBox = new ComboBox();
+            ExclusiveCheckBox = new CheckBox();
             timer1 = new System.Windows.Forms.Timer(components);
             tabControl1.SuspendLayout();
             tabPage2.SuspendLayout();
@@ -988,7 +989,7 @@
             // 
             // panel2
             // 
-            panel2.Location = new Point(155, 144);
+            panel2.Location = new Point(660, 144);
             panel2.Name = "panel2";
             panel2.Size = new Size(512, 512);
             panel2.TabIndex = 1;
@@ -1063,7 +1064,7 @@
             // 
             SortLabel.AutoSize = true;
             SortLabel.Font = new Font("Tahoma", 14F, FontStyle.Regular, GraphicsUnit.Pixel);
-            SortLabel.Location = new Point(666, 28);
+            SortLabel.Location = new Point(636, 28);
             SortLabel.Name = "SortLabel";
             SortLabel.Size = new Size(26, 17);
             SortLabel.TabIndex = 27;
@@ -1086,7 +1087,7 @@
             // 
             ClassLabel.AutoSize = true;
             ClassLabel.Font = new Font("Tahoma", 14F, FontStyle.Regular, GraphicsUnit.Pixel);
-            ClassLabel.Location = new Point(666, 62);
+            ClassLabel.Location = new Point(636, 62);
             ClassLabel.Name = "ClassLabel";
             ClassLabel.Size = new Size(35, 17);
             ClassLabel.TabIndex = 29;
@@ -1105,6 +1106,18 @@
             ClassComboBox.SelectedIndex = 0;
             ClassComboBox.SelectedIndexChanged += ClassComboBox_SelectedIndexChanged;
             // 
+            // ExclusiveCheckBox
+            // 
+            ExclusiveCheckBox.AutoSize = true;
+            ExclusiveCheckBox.Font = new Font("Tahoma", 14F, FontStyle.Regular, GraphicsUnit.Pixel);
+            ExclusiveCheckBox.Location = new Point(692, 87);
+            ExclusiveCheckBox.Name = "ExclusiveCheckBox";
+            ExclusiveCheckBox.Size = new Size(120, 19);
+            ExclusiveCheckBox.TabIndex = 31;
+            ExclusiveCheckBox.Text = "Exclusive";
+            ExclusiveCheckBox.UseVisualStyleBackColor = true;
+            ExclusiveCheckBox.CheckedChanged += ExclusiveCheckBox_CheckedChanged;
+            // 
             // timer1
             // 
             timer1.Interval = 10;
@@ -1117,6 +1130,7 @@
             Controls.Add(EarListBox);
             Controls.Add(label5);
             Controls.Add(ClassComboBox);
+            Controls.Add(ExclusiveCheckBox);
             Controls.Add(ClassLabel);
             Controls.Add(SortComboBox);
             Controls.Add(SortLabel);
@@ -1224,6 +1238,7 @@
         private ComboBox SortComboBox;
         private Label ClassLabel;
         private ComboBox ClassComboBox;
+        private CheckBox ExclusiveCheckBox;
         private TabPage tabPage6;
         private ListBox FrameListBox;
         private Panel panel2;

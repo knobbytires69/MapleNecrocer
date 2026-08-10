@@ -1,0 +1,10 @@
+{
+  "name": ".NET Core Watch",
+  "type": "coreclr",
+  "request": "launch",
+  "args": ["--maplePath", "${env:MAPLESTORY_PATH:V:\\Nexon\\maplestory}"],
+  "cwd": "${workspaceFolder}",
+  "dotnetRunOptions": "--watch",
+  "console": "integratedTerminal",
+  "stopAtEntry": false
+}

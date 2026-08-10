@@ -13,6 +13,7 @@ public class Keyboard
 {
     static KeyboardState currentKeyState;
     static KeyboardState previousKeyState;
+    public static bool WindowActive { get; set; } = true;
 
     public static KeyboardState GetState()
     {
@@ -23,16 +24,16 @@ public class Keyboard
 
     public static bool KeyDown(Microsoft.Xna.Framework.Input.Keys key)
     {
-        return currentKeyState.IsKeyDown(key);
+        return WindowActive && currentKeyState.IsKeyDown(key);
     }
     public static bool KeyUp(Microsoft.Xna.Framework.Input.Keys key)
     {
-        return !previousKeyState.IsKeyUp(key) && currentKeyState.IsKeyUp(key);
+        return WindowActive && !previousKeyState.IsKeyUp(key) && currentKeyState.IsKeyUp(key);
     }
 
     public static bool KeyPressed(Microsoft.Xna.Framework.Input.Keys key)
     {
-        return currentKeyState.IsKeyDown(key) && !previousKeyState.IsKeyDown(key);
+        return WindowActive && currentKeyState.IsKeyDown(key) && !previousKeyState.IsKeyDown(key);
     }
 
 }

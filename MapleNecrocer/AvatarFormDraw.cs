@@ -25,6 +25,7 @@ public class AvatarFormDraw : MonoGameControl
     public static AvatarFormDraw Instance;
     public static RenderTarget2D AvatarPanelTexture;
     private static RenderTarget2D CheckBoardTexture;
+    private Vector2 PreviewCamera;
 
     protected override void Initialize()
     {
@@ -53,18 +54,27 @@ public class AvatarFormDraw : MonoGameControl
 
     protected override void Update(GameTime gameTime)
     {
+        if (Game.Player == null)
+            return;
+
+        PreviewCamera = new Vector2(Game.Player.X - 130, Game.Player.Y - 160);
+        Vector2 savedCam = EngineFunc.SpriteEngine.Camera;
+        EngineFunc.SpriteEngine.Camera = PreviewCamera;
+
         EngineFunc.Canvas.GraphicsDevice.SetRenderTarget(AvatarPanelTexture);
         EngineFunc.Canvas.GraphicsDevice.Clear(Microsoft.Xna.Framework.Color.Transparent);
         EngineFunc.SpriteEngine.DrawEx("Player", "ItemEffect", "SetEffect");
         EngineFunc.Canvas.GraphicsDevice.SetRenderTarget(null);
+
+        EngineFunc.SpriteEngine.Camera = savedCam;
     }
 
     protected override void Draw()
     {
         EngineFunc.Canvas.Draw(CheckBoardTexture, 0, 0);
         // Editor.graphics.Clear(Color.Aqua);
-        int WX = (int)(Game.Player.X - EngineFunc.SpriteEngine.Camera.X - 130 + MapleChair.BodyRelMove.X - TamingMob.Navel.X);
-        int WY = (int)(Game.Player.Y - EngineFunc.SpriteEngine.Camera.Y - 160 + MapleChair.BodyRelMove.Y - TamingMob.Navel.Y);
+        int WX = (int)(Game.Player.X - PreviewCamera.X - 130 + MapleChair.BodyRelMove.X - TamingMob.Navel.X);
+        int WY = (int)(Game.Player.Y - PreviewCamera.Y - 160 + MapleChair.BodyRelMove.Y - TamingMob.Navel.Y);
         EngineFunc.Canvas.DrawCropArea(AvatarPanelTexture, 0, 0, new Microsoft.Xna.Framework.Rectangle(WX, WY, WX + 280, WY + 200), 0, 0, 1, 1, 0, false, false, 255, 255, 255, 255, false, BlendMode.NonPremultiplied2);
     }
 

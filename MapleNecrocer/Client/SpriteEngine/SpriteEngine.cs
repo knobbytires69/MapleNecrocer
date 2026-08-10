@@ -1,4 +1,4 @@
-﻿
+
 using DevComponents.AdvTree;
 using System;
 using System.Collections;
@@ -400,16 +400,19 @@ public class Sprite
 
     // public Dictionary<string, Microsoft.Xna.Framework.Graphics.Texture2D> ImageLib;
     public Dictionary<Wz_Node, Microsoft.Xna.Framework.Graphics.Texture2D> ImageLib;
+    public Microsoft.Xna.Framework.Graphics.Texture2D GetImageTexture()
+    {
+        if (ImageNode != null && ImageLib != null && ImageLib.TryGetValue(ImageNode, out var tex))
+            return tex;
+        return null;
+    }
     public int ImageWidth
     {
-        get
-        {
-            return ImageLib[ImageNode].Width;
-        }
+        get => GetImageTexture()?.Width ?? 0;
     }
     public int ImageHeight
     {
-        get => ImageLib[ImageNode].Height;
+        get => GetImageTexture()?.Height ?? 0;
     }
     public int PatternWidth;
     public int PatternHeight;
@@ -553,8 +556,11 @@ public class Sprite
     {
         if (!Visible || ImageLib == null)
             return;
+        var tex = GetImageTexture();
+        if (tex == null)
+            return;
 
-        Engine.Canvas.DrawEx(ImageLib[ImageNode],
+        Engine.Canvas.DrawEx(tex,
            X + Camera.X - Engine.Camera.X, Y + Camera.Y - Engine.Camera.Y, 0, 0, 1, 1, 0, false, false, 255, 255, 255, 255, false, BlendMode);
     }
 
@@ -1037,13 +1043,14 @@ public class SpriteEx : Sprite
     }
     public override void DoDraw()
     {
-      //  if (ImageNode == null)
-         //   return;
-       
+        var tex = GetImageTexture();
+        if (tex == null)
+            return;
+
         switch (SpriteSheetMode)
         {
             case SpriteSheetMode.NoneSingle:
-                Engine.Canvas.DrawEx(ImageLib[ImageNode],
+                Engine.Canvas.DrawEx(tex,
                                      IntMove ? (int)X + Camera.X + Offset.X - (int)Engine.Camera.X : X + Camera.X + Offset.X - Engine.Camera.X,
                                      IntMove ? (int)Y + Camera.Y + Offset.Y - (int)Engine.Camera.Y : Y + Camera.Y + Offset.Y - Engine.Camera.Y,
                                      Origin.X, Origin.Y,
@@ -1057,7 +1064,7 @@ public class SpriteEx : Sprite
             // 
             case SpriteSheetMode.FixedSize:
 
-                Engine.Canvas.DrawPattern(ImageLib[ImageNode],
+                Engine.Canvas.DrawPattern(tex,
                                           IntMove ? (int)X + Camera.X + Offset.X - (int)Engine.Camera.X : X + Camera.X + Offset.X - Engine.Camera.X,
                                           IntMove ? (int)Y + Camera.Y + Offset.Y - (int)Engine.Camera.Y : Y + Camera.Y + Offset.Y - Engine.Camera.Y,
                                           PatternIndex,
@@ -1074,7 +1081,7 @@ public class SpriteEx : Sprite
                 break;
             //
             case SpriteSheetMode.VariableSize:
-                Engine.Canvas.DrawCropArea(ImageLib[ImageNode],
+                Engine.Canvas.DrawCropArea(tex,
                                            IntMove ? (int)X + Camera.X + Offset.X - (int)Engine.Camera.X : X + Camera.X + Offset.X - Engine.Camera.X,
                                            IntMove ? (int)Y + Camera.Y + Offset.Y - (int)Engine.Camera.Y : Y + Camera.Y + Offset.Y - Engine.Camera.Y,
                                            CropRect,
@@ -1905,7 +1912,8 @@ public class BackgroundSprite : AnimatedSprite
 
     public override void DoDraw()
     {
-        if (ImageNode == null)
+        var tex = GetImageTexture();
+        if (tex == null)
             return;
         int ChipWidth = this.Width;
         int ChipHeight = this.Height;
@@ -1969,7 +1977,7 @@ public class BackgroundSprite : AnimatedSprite
                     switch (TileMode)
                     {
                         case TileMode.Horizontal:
-                            Engine.Canvas.DrawEx(ImageLib[ImageNode],
+                            Engine.Canvas.DrawEx(tex,
                                                  cx * ChipWidth + OfsX - Offset.X, _y - Offset.Y,
                                                  Origin.X, Origin.Y,
                                                  ScaleX, ScaleY,
@@ -1981,7 +1989,7 @@ public class BackgroundSprite : AnimatedSprite
                             break;
 
                         case TileMode.Vertical:
-                            Engine.Canvas.DrawEx(ImageLib[ImageNode],
+                            Engine.Canvas.DrawEx(tex,
                                                  _x - Offset.X, cy * ChipHeight + OfsY - Offset.Y,
                                                  Origin.X, Origin.Y,
                                                  ScaleX, ScaleY,
@@ -1993,7 +2001,7 @@ public class BackgroundSprite : AnimatedSprite
                             break;
 
                         case TileMode.Full:
-                            Engine.Canvas.DrawEx(ImageLib[ImageNode],
+                            Engine.Canvas.DrawEx(tex,
                                                 cx * ChipWidth + OfsX - Offset.X, cy * ChipHeight + OfsY - Offset.Y,
                                                 Origin.X, Origin.Y,
                                                 ScaleX, ScaleY,
@@ -2014,7 +2022,7 @@ public class BackgroundSprite : AnimatedSprite
             {
                 for (int cx = StartX; cx < EndX; cx++)
                 {
-                    Engine.Canvas.DrawEx(ImageLib[ImageNode],
+                    Engine.Canvas.DrawEx(tex,
                                                cx * ChipWidth + OfsX - Offset.X, cy * ChipHeight + OfsY - Offset.Y,
                                                Origin.X, Origin.Y,
                                                ScaleX, ScaleY,

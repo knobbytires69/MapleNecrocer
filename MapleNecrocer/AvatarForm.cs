@@ -351,7 +351,6 @@ public partial class AvatarForm : Form
                     if (e.Item == null) return;
                     Wz_Node Node = Wz.GetNodeByID(e.Item.FileName, WzType.Character);
                     MainForm.Instance.QuickView(Node);
-                    MainForm.Instance.ToolTipView.Owner = this;
                     MainForm.Instance.ToolTipView.Location = Control.MousePosition;
                 }
             };
@@ -468,7 +467,6 @@ public partial class AvatarForm : Form
                 string _ID = Inventory.Rows[e.RowIndex].Cells[0].Value.ToString();
                 Wz_Node Node = Wz.GetNodeByID(_ID, WzType.Character);
                 MainForm.Instance.QuickView(Node);
-                MainForm.Instance.ToolTipView.Owner = this;
                 MainForm.Instance.ToolTipView.Visible = true;
                 MainForm.Instance.ToolTipView.Location = Control.MousePosition;
             }
@@ -484,6 +482,12 @@ public partial class AvatarForm : Form
         // Inventory.SetToolTipEvent(WzType.Character, this);
         AddEqps("00002000");
         AddInventory();
+        if (Game.Player != null)
+        {
+            Game.Player.RemoveSprites();
+            for (int i = 0; i < Player.EqpList.Count; i++)
+                Game.Player.Spawn(Player.EqpList[i]);
+        }
         ResetDyeGrid();
         ResetDyeGrid2();
         foreach (var Iter in Wz.GetNodes("Character/00012000.img/front"))
@@ -495,6 +499,7 @@ public partial class AvatarForm : Form
         }
 
         comboBox1.SelectedIndex = 0;
+        ExclusiveCheckBox.Enabled = ClassComboBox.SelectedIndex > 0;
 
         if (EarListBox.Items.Count == 0)
         {
@@ -682,14 +687,6 @@ public partial class AvatarForm : Form
 
     }
 
-    static bool MatchesClass(int reqJob, int selectedClass)
-    {
-        if (selectedClass <= 0) return true;
-        if (reqJob == 0) return true;
-        if (reqJob == -1) return false;
-        return (reqJob & (1 << (selectedClass - 1))) != 0;
-    }
-
     void PopulateEquipGrid(int partIndex)
     {
         if (!EquipCache.ContainsKey(partIndex))
@@ -698,8 +695,9 @@ public partial class AvatarForm : Form
         var source = EquipCache[partIndex];
         int selectedClass = ClassComboBox.SelectedIndex;
         int sortIndex = SortComboBox.SelectedIndex;
+        bool exclusive = ExclusiveCheckBox.Checked;
 
-        List<EquipItemData> items = source.Where(d => MatchesClass(d.Job, selectedClass)).ToList();
+        List<EquipItemData> items = source.Where(d => Equip.IsBasePart(d.ID) || Equip.MatchesClass(d.Job, selectedClass, exclusive)).ToList();
         if (sortIndex == 1)
             items = items.OrderBy(d => d.Level).ToList();
         else if (sortIndex == 2)
@@ -709,6 +707,8 @@ public partial class AvatarForm : Form
         grid.Items.Clear();
         foreach (var d in items)
         {
+            if (d.Bmp == null)
+                continue;
             grid.Items.Add(d.ID, d.Bmp);
             var item = grid.Items[grid.Items.Count - 1];
             item.Text = d.Level > 0 ? $"Lv.{d.Level}" : d.ID;
@@ -724,8 +724,9 @@ public partial class AvatarForm : Form
             return;
         int selectedClass = ClassComboBox.SelectedIndex;
         int sortIndex = SortComboBox.SelectedIndex;
+        bool exclusive = ExclusiveCheckBox.Checked;
 
-        List<SearchItemData> items = SearchCache.Where(d => MatchesClass(d.Job, selectedClass)).ToList();
+        List<SearchItemData> items = SearchCache.Where(d => Equip.IsBasePart(d.ID) || Equip.MatchesClass(d.Job, selectedClass, exclusive)).ToList();
         if (sortIndex == 1)
             items = items.OrderBy(d => d.Level).ToList();
         else if (sortIndex == 2)
@@ -753,6 +754,12 @@ public partial class AvatarForm : Form
     }
 
     private void ClassComboBox_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        ExclusiveCheckBox.Enabled = ClassComboBox.SelectedIndex > 0;
+        ApplyFilterAndSort();
+    }
+
+    private void ExclusiveCheckBox_CheckedChanged(object sender, EventArgs e)
     {
         ApplyFilterAndSort();
     }
@@ -814,20 +821,25 @@ public partial class AvatarForm : Form
 
     void CellClick(BaseDataGridView DataGrid, DataGridViewCellEventArgs e)
     {
-        var ID = DataGrid.Rows[e.RowIndex].Cells[0].Value.ToString();
+        if (e.RowIndex < 0 || e.ColumnIndex < 0)
+            return;
+        var idCell = DataGrid.Rows[e.RowIndex].Cells[0].Value;
+        if (idCell == null)
+            return;
+        var ID = idCell.ToString();
         label1.Text = ID;
-        label2.Text = DataGrid.Rows[e.RowIndex].Cells[1].Value.ToString();
+        label2.Text = DataGrid.Rows[e.RowIndex].Cells[1].Value?.ToString() ?? "";
         string Dir = Equip.GetDir(ID);
-        string Name = "";
-        // if (Wz.IsDataWz)
-        //   Name = Wz.GetStr("String/Eqp.img/Eqp/" + Dir + ID.IntID() + "/name");
-        // else
-        //   Name = Wz.GetStr("String/Item.img/Eqp/" + Dir + ID.IntID() + "/name");
         var Entry = Wz.GetNodeA("Character/" + Dir + ID + ".img");
+        if (Entry == null)
+        {
+            if (pictureBox1.Image != null)
+                pictureBox1.Image.Dispose();
+            pictureBox1.Image = null;
+            return;
+        }
         PartName PartName = Equip.GetPart(ID);
         Bitmap Bmp = null;
-        if (Bmp != null)
-            Bmp.Dispose();
         switch (PartName)
         {
             case PartName.Hair:
@@ -840,6 +852,8 @@ public partial class AvatarForm : Form
                 Bmp = Entry.GetBmp("info/icon");
                 break;
         }
+        if (pictureBox1.Image != null)
+            pictureBox1.Image.Dispose();
         pictureBox1.Image = Bmp;
 
     }
