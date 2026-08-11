@@ -72,8 +72,21 @@ public class FrameListDraw : MonoGameControl
         int OffsetY = FrameH / 2 + Game.Player.Height / 2;
         
         Rectangle bound = AvatarForm.AvatarBound;
+
+        // Scale the avatar down when its on-screen footprint would overrun the frame,
+        // so wide/tall sprites (e.g. large weapons) are not cut off.
         int posX = OffsetX + bound.X;
         int posY = OffsetY + bound.Y;
+        float scale = 1f;
+        if (SpriteFit.FootprintOverflows(posX, posY, bound.Width, bound.Height, FrameW, FrameH))
+        {
+            // Re-center (and scale down if needed) so the whole sprite fits the frame.
+            scale = SpriteFit.FitScale(bound.Width, bound.Height, FrameW, FrameH);
+            int destW = Math.Max(1, (int)(bound.Width * scale));
+            int destH = Math.Max(1, (int)(bound.Height * scale));
+            posX = (FrameW - destW) / 2;
+            posY = (FrameH - destH) / 2;
+        }
 
         int avatarPosX = (int)(Game.Player.X - EngineFunc.SpriteEngine.Camera.X + bound.X);
         int avatarPosY = (int)(Game.Player.Y - EngineFunc.SpriteEngine.Camera.Y + bound.Y);
@@ -82,7 +95,7 @@ public class FrameListDraw : MonoGameControl
             AvatarPanelTexture,
             posX, posY,
             avatarBound,
-            0, 0, 1, 1, 0, 
+            0, 0, scale, scale, 0, 
             false, false, 
             255, 255, 255, 255, 
             false, BlendMode.NonPremultiplied2);
@@ -109,15 +122,15 @@ public class FrameListDraw : MonoGameControl
 
             EngineFunc.Canvas.DrawRectangle(
                 posX, posY,
-                avatarBound.Width - 1, avatarBound.Height - 1,
+                (int)(bound.Width * scale) - 1, (int)(bound.Height * scale) - 1,
                 new Color(0, 0, 255)
             );
 
-            posX = OffsetX + AvatarForm.CurrentSpriteBound.X;
-            posY = OffsetY + AvatarForm.CurrentSpriteBound.Y;
+            posX = posX + (int)((AvatarForm.CurrentSpriteBound.X - bound.X) * scale);
+            posY = posY + (int)((AvatarForm.CurrentSpriteBound.Y - bound.Y) * scale);
             EngineFunc.Canvas.DrawRectangle(
                 posX, posY,
-                AvatarForm.CurrentSpriteBound.Width - 1, AvatarForm.CurrentSpriteBound.Height - 1,
+                (int)(AvatarForm.CurrentSpriteBound.Width * scale) - 1, (int)(AvatarForm.CurrentSpriteBound.Height * scale) - 1,
                 new Color(255, 0, 0)
             );
         }

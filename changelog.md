@@ -2,6 +2,72 @@
 
 All notable changes are recorded here. Entries below the latest release note are working-tree changes.
 
+## (2026-08-10) - Avatar Export Preview & Keyboard Input Fixes
+
+### Goal
+Fix three Avatar-form issues: the Export-tab character preview window was off-screen at
+regular window size, oversized sprites (large weapons) were cut off in the Export preview,
+and the game character stopped responding to the keyboard after interacting with other
+forms (Skill, the Search box).
+
+### Export preview position restored
+
+- **`MapleNecrocer/AvatarForm.Designer.cs`**
+  - Restored `panel2` (the character preview on the Export tab) from `Point(660, 144)` to
+    its original `Point(155, 144)`. The fork had moved it past the 792px tab page, so it
+    was only visible when the window was maximized.
+
+### Fit-to-frame preview and export
+
+- **`MapleNecrocer/SpriteFit.cs`** (new)
+  - Added `SpriteFit.FitScale(width, height, maxW, maxH)` and
+    `SpriteFit.FootprintOverflows(posX, posY, w, h, frameW, frameH)` — pure math helpers
+    used by both the preview and the export path.
+
+- **`MapleNecrocer/FrameListDraw.cs`**
+  - The Export preview now detects overflow on the sprite's actual on-screen footprint
+    (`posX < 0`, `posY < 0`, or sprite extending past the frame edge), not just oversized
+    dimensions, so sprites pushed off-frame by a negative offset are also caught. On
+    overflow it re-centers the avatar and scales it down to fit the 512×512 frame.
+    Removed the redundant `Math.Min(scale, 1f)`.
+
+- **`MapleNecrocer/AvatarForm.cs`**
+  - `GetClipBoundindBox` no longer clamps the source region to 512; the full `AvatarBound`
+    is returned and the export methods scale it to fit instead of cropping.
+  - `ExportSprite`, `ExportAllSprite`, and `ExportSpriteSheet` now compute a fit scale from
+    `SpriteFit` and draw the cropped region scaled, so exported output matches the preview
+    (normal-sized avatars are unchanged; oversized sprites are no longer clipped). Debug
+    overlay rectangles/lines are scaled to match.
+
+### Keyboard input gating made reliable
+
+- **`MapleNecrocer/MainForm.cs`**
+  - Removed the fragile `Deactivate`/`Activated` handlers that flipped
+    `SpriteEngine.Keyboard.WindowActive`, which were missed after interacting with other
+    forms.
+
+- **`MapleNecrocer/RenderFormDraw.cs`**
+  - `Update` now computes `WindowActive` each frame from `Form.ActiveForm == MainForm.Instance`
+    (single source of truth, still suppresses input when the app is not focused) OR a left
+    click inside the game view, which also returns focus to the game control. Guarded by
+    `IsHandleCreated`.
+
+### Tests
+
+- **`MapleNecrocer.Tests/SpriteFitTests.cs`** (new)
+  - 12 cases covering `FitScale` (fit, scale-by-width, scale-by-height, exact-frame margin,
+    non-positive inputs, never upscales) and `FootprintOverflows` (offset-induced overflow,
+    in-frame, negative position). All tests pass.
+
+### Files modified
+- `MapleNecrocer/AvatarForm.Designer.cs`
+- `MapleNecrocer/FrameListDraw.cs`
+- `MapleNecrocer/AvatarForm.cs`
+- `MapleNecrocer/SpriteFit.cs` (new)
+- `MapleNecrocer/MainForm.cs`
+- `MapleNecrocer/RenderFormDraw.cs`
+- `MapleNecrocer.Tests/SpriteFitTests.cs` (new)
+
 ## (2026-08-10) - Code Review Fix Pass
 
 ### Goal

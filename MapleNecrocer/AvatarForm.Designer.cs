@@ -989,7 +989,7 @@
             // 
             // panel2
             // 
-            panel2.Location = new Point(660, 144);
+            panel2.Location = new Point(155, 144);
             panel2.Name = "panel2";
             panel2.Size = new Size(512, 512);
             panel2.TabIndex = 1;

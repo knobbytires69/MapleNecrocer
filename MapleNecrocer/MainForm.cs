@@ -44,8 +44,6 @@ public partial class MainForm : Form
             InitializeComponent();
             Instance = this;
             openedWz = new List<Wz_Structure>();
-            this.Deactivate += (s, e) => SpriteEngine.Keyboard.WindowActive = false;
-            this.Activated += (s, e) => SpriteEngine.Keyboard.WindowActive = true;
             PluginManager.WzFileFinding += new FindWzEventHandler(WzFileFinding);
             if (!System.Windows.Forms.SystemInformation.TerminalServerSession)
             {

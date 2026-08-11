@@ -1175,7 +1175,7 @@ public partial class AvatarForm : Form
         {
             int posX = (int)(Game.Player.X - EngineFunc.SpriteEngine.Camera.X + AvatarBound.X);
             int posY = (int)(Game.Player.Y - EngineFunc.SpriteEngine.Camera.Y + AvatarBound.Y);
-            result = new Rectangle(posX, posY, Math.Min(512, AvatarBound.Width), Math.Min(512, AvatarBound.Height));
+            result = new Rectangle(posX, posY, AvatarBound.Width, AvatarBound.Height);
         }
         return result;
     }
@@ -1214,14 +1214,17 @@ public partial class AvatarForm : Form
     private void ExportSprite(object sender, EventArgs e)
     {
         Rectangle bound = GetClipBoundindBox();
+        float scale = SpriteFit.FitScale(bound.Width, bound.Height, 512, 512);
+        int texW = Math.Max(1, (int)(bound.Width * scale));
+        int texH = Math.Max(1, (int)(bound.Height * scale));
 
-        RenderTarget2D texture = new RenderTarget2D(EngineFunc.Canvas.GraphicsDevice, bound.Width, bound.Height, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+        RenderTarget2D texture = new RenderTarget2D(EngineFunc.Canvas.GraphicsDevice, texW, texH, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
         EngineFunc.Canvas.GraphicsDevice.SetRenderTarget(texture);
         EngineFunc.Canvas.GraphicsDevice.Clear(Microsoft.Xna.Framework.Color.Transparent);
         EngineFunc.Canvas.DrawCropArea(
             FrameListDraw.AvatarPanelTexture,
             0, 0, bound,
-            0, 0, 1, 1, 0,
+            0, 0, scale, scale, 0,
             false, false,
             255, 255, 255, 255,
             false, BlendMode.NonPremultiplied2);
@@ -1229,21 +1232,21 @@ public partial class AvatarForm : Form
         if (debugDraw)
         {
             EngineFunc.Canvas.GraphicsDevice.SetRenderTarget(texture);
-            EngineFunc.Canvas.DrawRectangle(0, 0, bound.Width - 1, bound.Height - 1, Microsoft.Xna.Framework.Color.Blue);
+            EngineFunc.Canvas.DrawRectangle(0, 0, texW - 1, texH - 1, Microsoft.Xna.Framework.Color.Blue);
             if (useCustomBound)
             {
                 int cx = FrameListDraw.Width / 2 - AdjustX;
                 int cy = FrameListDraw.Height / 2 + Game.Player.Height / 2 - AdjustY;
-                EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point(0, cy), new Microsoft.Xna.Framework.Point(bound.Width, cy), 1, Microsoft.Xna.Framework.Color.Green);
-                EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point(cx, 0), new Microsoft.Xna.Framework.Point(cx, bound.Height), 1, Microsoft.Xna.Framework.Color.Green);
+                EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point(0, (int)(cy * scale)), new Microsoft.Xna.Framework.Point(texW, (int)(cy * scale)), 1, Microsoft.Xna.Framework.Color.Green);
+                EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point((int)(cx * scale), 0), new Microsoft.Xna.Framework.Point((int)(cx * scale), texH), 1, Microsoft.Xna.Framework.Color.Green);
             }
             else
             {
                 int cx = -AvatarBound.X;
                 int cy = -AvatarBound.Y;
-                EngineFunc.Canvas.DrawRectangle(cx + CurrentSpriteBound.X, cy + CurrentSpriteBound.Y, CurrentSpriteBound.Width - 1, CurrentSpriteBound.Height - 1, Microsoft.Xna.Framework.Color.Red);
-                EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point(0, cy), new Microsoft.Xna.Framework.Point(bound.Width, cy), 1, Microsoft.Xna.Framework.Color.Green);
-                EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point(cx, 0), new Microsoft.Xna.Framework.Point(cx, bound.Height), 1, Microsoft.Xna.Framework.Color.Green);
+                EngineFunc.Canvas.DrawRectangle((int)((cx + CurrentSpriteBound.X) * scale), (int)((cy + CurrentSpriteBound.Y) * scale), (int)(CurrentSpriteBound.Width * scale) - 1, (int)(CurrentSpriteBound.Height * scale) - 1, Microsoft.Xna.Framework.Color.Red);
+                EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point(0, (int)(cy * scale)), new Microsoft.Xna.Framework.Point(texW, (int)(cy * scale)), 1, Microsoft.Xna.Framework.Color.Green);
+                EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point((int)(cx * scale), 0), new Microsoft.Xna.Framework.Point((int)(cx * scale), texH), 1, Microsoft.Xna.Framework.Color.Green);
             }
             EngineFunc.Canvas.DrawString("Arial13", $"{FrameListBox.SelectedItem}", 2, 0, Microsoft.Xna.Framework.Color.Red);
         }
@@ -1260,7 +1263,10 @@ public partial class AvatarForm : Form
         ChangeExpressionListBox = true;
 
         Rectangle bound = GetClipBoundindBox();
-        RenderTarget2D texture = new RenderTarget2D(EngineFunc.Canvas.GraphicsDevice, bound.Width, bound.Height, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+        float scale = SpriteFit.FitScale(bound.Width, bound.Height, 512, 512);
+        int texW = Math.Max(1, (int)(bound.Width * scale));
+        int texH = Math.Max(1, (int)(bound.Height * scale));
+        RenderTarget2D texture = new RenderTarget2D(EngineFunc.Canvas.GraphicsDevice, texW, texH, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
         EngineFunc.Canvas.GraphicsDevice.SetRenderTarget(texture);
 
         for (int i = 0; i < AllFrames.Length; i++)
@@ -1284,7 +1290,7 @@ public partial class AvatarForm : Form
             EngineFunc.Canvas.DrawCropArea(
                 FrameListDraw.AvatarPanelTexture,
                 0, 0, bound,
-                0, 0, 1, 1, 0,
+                0, 0, scale, scale, 0,
                 false, false,
                 255, 255, 255, 255,
                 false, BlendMode.NonPremultiplied2);
@@ -1292,21 +1298,21 @@ public partial class AvatarForm : Form
             if (debugDraw)
             {
                 EngineFunc.Canvas.GraphicsDevice.SetRenderTarget(texture);
-                EngineFunc.Canvas.DrawRectangle(0, 0, bound.Width - 1, bound.Height - 1, Microsoft.Xna.Framework.Color.Blue);
+                EngineFunc.Canvas.DrawRectangle(0, 0, texW - 1, texH - 1, Microsoft.Xna.Framework.Color.Blue);
                 if (useCustomBound)
                 {
                     int cx = FrameListDraw.Width / 2 - AdjustX;
                     int cy = FrameListDraw.Height / 2 + Game.Player.Height / 2 - AdjustY;
-                    EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point(0, cy), new Microsoft.Xna.Framework.Point(bound.Width, cy), 1, Microsoft.Xna.Framework.Color.Green);
-                    EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point(cx, 0), new Microsoft.Xna.Framework.Point(cx, bound.Height), 1, Microsoft.Xna.Framework.Color.Green);
+                    EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point(0, (int)(cy * scale)), new Microsoft.Xna.Framework.Point(texW, (int)(cy * scale)), 1, Microsoft.Xna.Framework.Color.Green);
+                    EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point((int)(cx * scale), 0), new Microsoft.Xna.Framework.Point((int)(cx * scale), texH), 1, Microsoft.Xna.Framework.Color.Green);
                 }
                 else
                 {
                     int cx = -AvatarBound.X;
                     int cy = -AvatarBound.Y;
-                    EngineFunc.Canvas.DrawRectangle(cx + FrameBound[i].X, cy + FrameBound[i].Y, FrameBound[i].Width - 1, FrameBound[i].Height - 1, Microsoft.Xna.Framework.Color.Red);
-                    EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point(0, cy), new Microsoft.Xna.Framework.Point(bound.Width, cy), 1, Microsoft.Xna.Framework.Color.Green);
-                    EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point(cx, 0), new Microsoft.Xna.Framework.Point(cx, bound.Height), 1, Microsoft.Xna.Framework.Color.Green);
+                    EngineFunc.Canvas.DrawRectangle((int)((cx + FrameBound[i].X) * scale), (int)((cy + FrameBound[i].Y) * scale), (int)(FrameBound[i].Width * scale) - 1, (int)(FrameBound[i].Height * scale) - 1, Microsoft.Xna.Framework.Color.Red);
+                    EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point(0, (int)(cy * scale)), new Microsoft.Xna.Framework.Point(texW, (int)(cy * scale)), 1, Microsoft.Xna.Framework.Color.Green);
+                    EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point((int)(cx * scale), 0), new Microsoft.Xna.Framework.Point((int)(cx * scale), texH), 1, Microsoft.Xna.Framework.Color.Green);
                 }
                 EngineFunc.Canvas.DrawString("Arial13", $"{i}_{frameName}", 2, 0, Microsoft.Xna.Framework.Color.Red);
             }
@@ -1357,7 +1363,10 @@ public partial class AvatarForm : Form
         ChangeExpressionListBox = true;
 
         Rectangle clipBound = GetClipBoundindBox();
-        int SpriteSize = 8 * Math.Max(clipBound.Width + 2, clipBound.Height + 2);
+        float scale = SpriteFit.FitScale(clipBound.Width, clipBound.Height, 512, 512);
+        int clipW = Math.Max(1, (int)(clipBound.Width * scale));
+        int clipH = Math.Max(1, (int)(clipBound.Height * scale));
+        int SpriteSize = 8 * Math.Max(clipW + 2, clipH + 2);
         int textureSize = 128;
         while (textureSize < SpriteSize && textureSize < 4096)
             textureSize *= 2;
@@ -1371,10 +1380,10 @@ public partial class AvatarForm : Form
 
         SpriteSize = textureSize / 8;
         Rectangle spriteBound = new Rectangle(
-            (SpriteSize - clipBound.Width + 2) / 2, 
-            (SpriteSize - clipBound.Height + 2) / 2, 
-            clipBound.Width + 2, 
-            clipBound.Height + 2);
+            (SpriteSize - clipW + 2) / 2, 
+            (SpriteSize - clipH + 2) / 2, 
+            clipW + 2, 
+            clipH + 2);
         RenderTarget2D texture;
         for (int index = 0; index < AllFrames.Length; index++)
         {
@@ -1402,7 +1411,7 @@ public partial class AvatarForm : Form
             EngineFunc.Canvas.DrawCropArea(
                 FrameListDraw.AvatarPanelTexture,
                 posX, posY, clipBound,
-                0, 0, 1, 1, 0,
+                0, 0, scale, scale, 0,
                 false, false,
                 255, 255, 255, 255,
                 false, BlendMode.NonPremultiplied2);
@@ -1418,16 +1427,16 @@ public partial class AvatarForm : Form
                 {
                     int cx = posX + FrameListDraw.Width / 2 - AdjustX;
                     int cy = posY + FrameListDraw.Height / 2 - AdjustY + Game.Player.Height / 2;
-                    EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point(ox, cy), new Microsoft.Xna.Framework.Point(ox + SpriteSize, cy), 1, Microsoft.Xna.Framework.Color.Green);
-                    EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point(cx, oy), new Microsoft.Xna.Framework.Point(cx, oy + SpriteSize), 1, Microsoft.Xna.Framework.Color.Green);
+                    EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point(ox, (int)(cy * scale)), new Microsoft.Xna.Framework.Point(ox + SpriteSize, (int)(cy * scale)), 1, Microsoft.Xna.Framework.Color.Green);
+                    EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point((int)(cx * scale), oy), new Microsoft.Xna.Framework.Point((int)(cx * scale), oy + SpriteSize), 1, Microsoft.Xna.Framework.Color.Green);
                 }
                 else
                 {
                     int cx = ox + spriteBound.X - AvatarBound.X;
                     int cy = oy + spriteBound.Y - AvatarBound.Y;
-                    EngineFunc.Canvas.DrawRectangle(cx + FrameBound[index].X, cy + FrameBound[index].Y, FrameBound[index].Width - 1, FrameBound[index].Height - 1, Microsoft.Xna.Framework.Color.Red);
-                    EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point(ox, cy), new Microsoft.Xna.Framework.Point(ox + SpriteSize, cy), 1, Microsoft.Xna.Framework.Color.Green);
-                    EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point(cx, oy), new Microsoft.Xna.Framework.Point(cx, oy + SpriteSize), 1, Microsoft.Xna.Framework.Color.Green);
+                    EngineFunc.Canvas.DrawRectangle((int)((cx + FrameBound[index].X) * scale), (int)((cy + FrameBound[index].Y) * scale), (int)(FrameBound[index].Width * scale) - 1, (int)(FrameBound[index].Height * scale) - 1, Microsoft.Xna.Framework.Color.Red);
+                    EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point(ox, (int)(cy * scale)), new Microsoft.Xna.Framework.Point(ox + SpriteSize, (int)(cy * scale)), 1, Microsoft.Xna.Framework.Color.Green);
+                    EngineFunc.Canvas.DrawLine(new Microsoft.Xna.Framework.Point((int)(cx * scale), oy), new Microsoft.Xna.Framework.Point((int)(cx * scale), oy + SpriteSize), 1, Microsoft.Xna.Framework.Color.Green);
                 }
 
                 EngineFunc.Canvas.DrawString("Arial13", $"{index}_{frameName}", ox + 2, oy, Microsoft.Xna.Framework.Color.Red);

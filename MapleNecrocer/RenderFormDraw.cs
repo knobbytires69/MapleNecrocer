@@ -79,6 +79,7 @@ public class RenderFormDraw : MonoGameControl
 
     }
     private static Vector2 NewPos, CurrentPos;
+    private bool prevLeftDown;
 
     void UpdateGame()
     {
@@ -176,6 +177,22 @@ public class RenderFormDraw : MonoGameControl
     private static float Accumulator = 0.0f;
     protected override void Update(GameTime gameTime)
     {
+        // Gate keyboard input on the game view being active. Querying Form.ActiveForm
+        // each frame is more reliable than the Deactivate/Activated events, which were
+        // missed after interacting with other forms; a click directly in the view also
+        // re-enables input and returns focus to the game control.
+        bool leftDown = System.Windows.Forms.Control.MouseButtons.HasFlag(System.Windows.Forms.MouseButtons.Left);
+        bool clickedInGame = false;
+        if (this.IsHandleCreated)
+        {
+            System.Drawing.Point mousePos = this.PointToClient(System.Windows.Forms.Control.MousePosition);
+            clickedInGame = leftDown && this.ClientRectangle.Contains(mousePos);
+        }
+        Keyboard.WindowActive = System.Windows.Forms.Form.ActiveForm == MainForm.Instance || clickedInGame;
+        if (clickedInGame && !prevLeftDown)
+            this.Focus();
+        prevLeftDown = leftDown;
+
         if (PreviousTime == 0)
         {
             PreviousTime = (float)gameTime.TotalGameTime.TotalMilliseconds;
