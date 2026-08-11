@@ -2,6 +2,51 @@
 
 All notable changes are recorded here. Entries below the latest release note are working-tree changes.
 
+## (2026-08-11) - Avatar Form Focus, Crash & Equipment Glitch Fixes
+
+### Goal
+Fix a set of Avatar-form regressions: the form losing focus to MainForm on every
+button click (causing unresponsive checkboxes, class filter, and slow loading),
+a `NullReferenceException` crash when clicking certain avatar items, and body-map
+coordinates persisting across equipment changes (head detached from body, broken
+prone animation).
+
+### Avatar form focus restored
+
+- **`MapleNecrocer/AvatarForm.cs`**
+  - Removed `tabControl1.SelectedIndex = 0;` from `button1_Click`. Forcing the tab
+    index on every button click triggered `tabControl1_SelectedIndexChanged`, which
+    disposed and recreated `MainForm.Instance.ToolTipView` — shifting OS focus to
+    MainForm and making the AvatarForm unresponsive.
+  - `tabControl1_SelectedIndexChanged` case 0 now only creates `AfrmTooltip` once
+    (when `null`) instead of disposing and recreating it on every tab-0 selection.
+    This was the root cause of the form constantly losing focus, which made the Tool
+    Tip checkbox, Exclusive checkbox, and Class filter appear broken until the form
+    regained focus.
+
+### Null-reference crash when clicking avatar items
+
+- **`MapleNecrocer/Client/MapleCharacter.cs`**
+  - `CreateEquip` now checks `Wz.GetNodeA(...)` for null before calling
+    `Wz.DumpData(Img, ...)`. A null node caused `Wz.Scan1` to throw
+    `NullReferenceException` at the `switch (WzNode.Value)` statement.
+  - Added a null guard for `Img` before the `foreach (var Iter in Img.Nodes)` loop so
+    a missing WZ node returns cleanly with `ResetAction = true` instead of crashing.
+
+### Body-map coordinates reset on equipment change
+
+- **`MapleNecrocer/Client/MapleCharacter.cs`**
+  - Added `Player.ResetBodyMap()` which zeroes all body-map vector fields
+    (`Neck`, `Brow`, `Hand`, `Navel`, `ArmHand`, `ArmNavel`, `BodyNeck`, `BodyNavel`,
+    `BodyHand`, `lHandMove`, `HeadBrow`, `HeadNeck`, `BrowPos`, `TamingNavel`).
+  - `RemoveSprites()` now calls `ResetBodyMap()` after clearing `PartSpriteList`, so
+    new equipment starts with clean offsets. This fixes the head being detached from
+    the body and the prone animation leaving the head in place after changing clothes.
+
+### Files modified
+- `MapleNecrocer/AvatarForm.cs`
+- `MapleNecrocer/Client/MapleCharacter.cs`
+
 ## (2026-08-10) - Player Sprite, Minimap & Weapon Grid Fixes
 
 ### Goal

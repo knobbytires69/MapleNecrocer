@@ -515,7 +515,6 @@ public partial class AvatarForm : Form
     private void button1_Click(object sender, EventArgs e)
     {
         MainForm.Instance.ToolTipView.Visible = false;
-        tabControl1.SelectedIndex = 0;
         string CharacterDir = "";
         string ButtonText = ((System.Windows.Forms.Button)sender).Text.Trim(' ');
 
@@ -881,10 +880,8 @@ public partial class AvatarForm : Form
         {
             case 0:
 
-                if (MainForm.Instance.ToolTipView.Parent != null)
+                if (MainForm.Instance.ToolTipView == null)
                 {
-                    MainForm.Instance.ToolTipView.Dispose();
-                    MainForm.Instance.ToolTipView = null;
                     MainForm.Instance.ToolTipView = new AfrmTooltip();
                     MainForm.Instance.ToolTipView.Visible = true;
                     MainForm.Instance.ToolTipView.StringLinker = MainForm.Instance.stringLinker;

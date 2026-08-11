@@ -314,8 +314,11 @@ public class Player : JumperSprite
 
         if (!EquipDumpList.Contains(EquipID))
         {
-            Wz.DumpData(Img, Wz.EquipData, Wz.EquipImageLib);
-            EquipDumpList.Add(EquipID);
+            if (Img != null)
+            {
+                Wz.DumpData(Img, Wz.EquipData, Wz.EquipImageLib);
+                EquipDumpList.Add(EquipID);
+            }
         }
 
         string LPath = "Character/Weapon/";
@@ -398,6 +401,20 @@ public class Player : JumperSprite
 
         AvatarParts Sprite;
         SameNames.Clear();
+        if (Img == null)
+        {
+            ResetAction = true;
+            if (OtherPlayer)
+                NewAction = StandType;
+            else
+            {
+                if ((MapleChair.IsUse) || (TamingMob.IsUse))
+                    NewAction = "sit";
+                else
+                    NewAction = StandType;
+            }
+            return;
+        }
         if (Loaded)
         {
             if (Img == Wz.GetNodeA("Character/00002000.img"))
@@ -546,6 +563,25 @@ public class Player : JumperSprite
 
     }
 
+    public void ResetBodyMap()
+    {
+        Neck = Vector2.Zero;
+        Navel = Vector2.Zero;
+        Hand = Vector2.Zero;
+        Brow = Vector2.Zero;
+        HandMove = Vector2.Zero;
+        ArmHand = Vector2.Zero;
+        ArmNavel = Vector2.Zero;
+        BodyNeck = Vector2.Zero;
+        BodyNavel = Vector2.Zero;
+        BodyHand = Vector2.Zero;
+        lHandMove = Vector2.Zero;
+        HeadBrow = Vector2.Zero;
+        HeadNeck = Vector2.Zero;
+        BrowPos = Vector2.Zero;
+        TamingNavel = Vector2.Zero;
+    }
+
     public void RemoveSprites()
     {
         foreach (var Iter in PartSpriteList)
@@ -554,6 +590,7 @@ public class Player : JumperSprite
         }
         EngineFunc.SpriteEngine.Dead();
         PartSpriteList.Clear();
+        ResetBodyMap();
     }
 
     public override void DoMove(float Delta)
