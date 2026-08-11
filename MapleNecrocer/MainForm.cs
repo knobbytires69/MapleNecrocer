@@ -207,9 +207,15 @@ public partial class MainForm : Form
         {
             if (Wz.HasNode("String/Map.img"))
             {
-                foreach (var Iter in Wz.GetNodes("String/Map.img"))
+                foreach (var Iter in Wz.GetNodes("String/Map.img").ToList())
                 {
-                    foreach (var Iter2 in Iter.Nodes)
+                    var IterImg = Iter.GetValue<Wz_Image>();
+                    Wz_Node iterContent = Iter;
+                    if (IterImg != null && IterImg.TryExtract() && IterImg.Node != null)
+                    {
+                        iterContent = IterImg.Node;
+                    }
+                    foreach (var Iter2 in iterContent.Nodes.ToList())
                     {
                         string ID = Iter2.Text?.PadLeft(9, '0') ?? "";
                         if (string.IsNullOrEmpty(ID))
@@ -227,11 +233,11 @@ public partial class MainForm : Form
                 Win32.SendMessage(MapListBox.Handle, false);
                 if (Wz.HasNode("Map/Map"))
                 {
-                    foreach (var Dir in Wz.GetNodes("Map/Map"))
+                    foreach (var Dir in Wz.GetNodes("Map/Map").ToList())
                     {
                         if (LeftStr(Dir.Text, 3) != "Map" && Wz.HasHardCodedStrings == false)
                             continue;
-                        foreach (var img in Dir.Nodes)
+                        foreach (var img in Dir.Nodes.ToList())
                         {
                             if (!Char.IsNumber(img.Text[0]))
                                 continue;
@@ -249,7 +255,7 @@ public partial class MainForm : Form
                 Win32.SendMessage(MapListBox.Handle, false);
                 if (Wz.HasNode("Map/Map"))
                 {
-                    foreach (var Iter in Wz.GetNodes("Map/Map"))
+                    foreach (var Iter in Wz.GetNodes("Map/Map").ToList())
                     {
                         string ID = Iter.Text?.Replace(".img", "") ?? "";
                         ID = ID.PadLeft(9, '0');
@@ -272,6 +278,7 @@ public partial class MainForm : Form
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error in DumpMapIDs: {ex}");
+            WriteError($"Error in DumpMapIDs: {ex}");
             MessageBox.Show($"Error loading map data:\n{ex}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
