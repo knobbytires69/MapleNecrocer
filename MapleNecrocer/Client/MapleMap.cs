@@ -139,6 +139,9 @@ public class Map
             i.Value.Dispose();
         Wz.EquipImageLib.Clear();
 
+        if (Game.Player != null)
+            Player.ReDumpEquip();
+
 
         if (EngineFunc.SpriteEngine.ImageLib != null)
         {

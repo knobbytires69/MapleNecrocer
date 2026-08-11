@@ -2,6 +2,60 @@
 
 All notable changes are recorded here. Entries below the latest release note are working-tree changes.
 
+## (2026-08-10) - Player Sprite, Minimap & Weapon Grid Fixes
+
+### Goal
+Fix three rendering/data bugs reported in the current build: the player sprite being
+invisible in play mode and the avatar window, the minimap being messed up, and the
+avatar screen showing no equipment for the Weapon-1 / Weapon-2 slots.
+
+### Invisible player sprite restored
+
+- **`MapleNecrocer/Client/MapleMap.cs`**
+  - `LoadMap` clears `Wz.EquipImageLib` (and disposes its textures) on every map load to
+    free memory, but `Wz.EquipData` / `EquipDumpList` were not reset and the player is
+    only spawned on the first load. So after the first map change the player's equip
+    textures were gone, leaving every `AvatarParts` sprite with a valid `ImageNode` but no
+    texture — invisible in play mode and in the avatar window.
+  - After clearing the library, `LoadMap` now calls `Player.ReDumpEquip()` when a player
+    exists, re-populating the player's equip textures.
+
+- **`MapleNecrocer/Client/MapleCharacter.cs`**
+  - Added `Player.ReDumpEquip()`: re-dumps the base body/head template plus every item in
+    `EqpList` into `Wz.EquipData` / `Wz.EquipImageLib`, and resets `EquipDumpList`. The
+    existing sprites keep their `ImageNode` references, so re-dumping restores their
+    textures without recreating sprites.
+
+### Minimap texture lookups hardened
+
+- **`MapleNecrocer/Client/UI/MiniMap.cs`**
+  - `DrawImage` / `GetImage` now resolve textures robustly: they look up the node directly,
+    then resolve UOLs (`ResolveUol`) and fall back to the node stored under the same path
+    in `Wz.UIData`. This matches how `Wz.DumpData` keys `Wz.UIImageLib` for plain PNGs,
+    PNGs with `_outlink`/`_inlink`, and UOLs, so the canvas, border tiles, NPC/portal marks
+    and the player marker are drawn even when `GetNode(...)` returns a linked source node.
+  - Canvas and border-tile lookups now use the raw child node (`Nodes["canvas"]` /
+    `Nodes["n"]` etc.) instead of `GetNode(...)`, matching the node the dump stored.
+  - Mark lookups (`npc`/`portal`/`user`/map-mark) now consistently use `GetNodeA`.
+  - The player marker draw uses the hardened `GetImage` helper.
+
+### Weapon-1 / Weapon-2 avatar grid populated
+
+- **`MapleNecrocer/AvatarForm.cs`**
+  - The `default` case in `button1_Click` (weapons, caps, coats, etc.) required
+    `Iter.Nodes["icon"]` on each animation sub-node, which only fires when `info` is a
+    direct child and the icon lives there. In the newer Character WZ layout that check
+    missed every weapon, leaving the Weapon-1 / Weapon-2 grids empty.
+  - It now extracts the icon from `itemImgNode.GetNode("info/icon")` (img-level, robust to
+    nested `info`) and adds the item once per img using `img.ImgID()`, guarded by a dedup
+    check.
+
+### Files modified
+- `MapleNecrocer/Client/MapleMap.cs`
+- `MapleNecrocer/Client/MapleCharacter.cs`
+- `MapleNecrocer/Client/UI/MiniMap.cs`
+- `MapleNecrocer/AvatarForm.cs`
+
 ## (2026-08-10) - Avatar Export Preview & Keyboard Input Fixes
 
 ### Goal

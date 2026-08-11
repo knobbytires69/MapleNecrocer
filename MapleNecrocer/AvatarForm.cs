@@ -674,8 +674,8 @@ public partial class AvatarForm : Form
                                 EquipCache[PartIndex].Add(new EquipItemData { ID = Iter.ImgID(), Bmp = Iter.GetBmp("hairOverHead"), Level = itemLevel, Job = itemJob });
                             break;
                         default:
-                            if (Iter.Nodes["icon"] != null)
-                                EquipCache[PartIndex].Add(new EquipItemData { ID = Iter.ImgID(), Bmp = Iter.GetBmp("icon"), Level = itemLevel, Job = itemJob });
+                            if (!EquipCache[PartIndex].Any(d => d.ID == img.ImgID()) && itemImgNode.GetNode("info/icon") != null)
+                                EquipCache[PartIndex].Add(new EquipItemData { ID = img.ImgID(), Bmp = itemImgNode.GetBmp("info/icon"), Level = itemLevel, Job = itemJob });
                             break;
                     }
                 }

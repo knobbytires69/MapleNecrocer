@@ -229,6 +229,25 @@ public class Player : JumperSprite
         Loaded = true;
     }
 
+    public static void ReDumpEquip()
+    {
+        EquipDumpList.Clear();
+        Wz_Node baseNode = Wz.HasHardCodedStrings ? Wz.GetNodeA("Character/00002000.img") : Wz.GetNodeA("Character/00002001.img");
+        if (baseNode != null)
+            Wz.DumpData(baseNode, Wz.EquipData, Wz.EquipImageLib);
+        foreach (var equipID in EqpList)
+        {
+            string Dir = Equip.GetDir(equipID);
+            var img = Wz.GetNodeA("Character/" + Dir + equipID + ".img");
+            if (img != null)
+            {
+                Wz.DumpData(img, Wz.EquipData, Wz.EquipImageLib);
+                if (!EquipDumpList.Contains(equipID))
+                    EquipDumpList.Add(equipID);
+            }
+        }
+    }
+
 
     public static List<string> EqpList = new();
     MonoSpriteEngine AvatarEngine;
