@@ -38,7 +38,7 @@ public class MiniMap : UIForm
     void DrawVersionAlpha()
     {
         Wz_Node UIEntry = Wz.GetNode("UI/UIWindow.img/MiniMap");
-        if (UIEntry != null)
+        if (UIEntry != null && !Wz.UIData.ContainsKey(UIEntry.FullPathToFile2()))
             Wz.DumpData(UIEntry, Wz.UIData, Wz.UIImageLib);
         int PicWidth, PicHeight;
         var Canvas = EngineFunc.Canvas;
@@ -48,7 +48,8 @@ public class MiniMap : UIForm
             cx = Map.Img.GetInt("miniMap/centerX");
             cy = Map.Img.GetInt("miniMap/centerY");
             var MiniMapNode = Map.Img.GetNode("miniMap");
-            Wz.DumpData(MiniMapNode, Wz.UIData, Wz.UIImageLib);
+            if (MiniMapNode != null && !Wz.UIData.ContainsKey(MiniMapNode.FullPathToFile2()))
+                Wz.DumpData(MiniMapNode, Wz.UIData, Wz.UIImageLib);
             var MiniMapPng = Map.Img.GetBmp("miniMap/canvas");
             int canvasW = MiniMapPng?.Width ?? 0;
 
@@ -108,7 +109,8 @@ public class MiniMap : UIForm
             var MinimapNode = Wz.GetNode("Map/MapHelper.img/minimap");
             if (MinimapNode != null)
             {
-                Wz.DumpData(MinimapNode, Wz.UIData, Wz.UIImageLib);
+                if (!Wz.UIData.ContainsKey(MinimapNode.FullPathToFile2()))
+                    Wz.DumpData(MinimapNode, Wz.UIData, Wz.UIImageLib);
                 var NpcMark = Wz.GetNode("Map/MapHelper.img/minimap/npc");
                 if (Map.Img.HasNode("life"))
                 {
@@ -154,7 +156,8 @@ public class MiniMap : UIForm
             var MapMarkPic = Wz.GetNode("Map/MapHelper.img/mark/" + MapMarkName);
             if (MapMarkPic != null)
             {
-                Wz.DumpData(MapMarkPic, Wz.UIData, Wz.UIImageLib);
+                if (!Wz.UIData.ContainsKey(MapMarkPic.FullPathToFile2()))
+                    Wz.DumpData(MapMarkPic, Wz.UIData, Wz.UIImageLib);
                 DrawImage(MapMarkPic, 7, 22);
             }
         }
@@ -169,7 +172,7 @@ public class MiniMap : UIForm
     void DrawVersion1()
     {
         Wz_Node UIEntry = Wz.GetNode("UI/UIWindow.img/MiniMap/MaxMap");
-        if (UIEntry != null)
+        if (UIEntry != null && !Wz.UIData.ContainsKey(UIEntry.FullPathToFile2()))
             Wz.DumpData(UIEntry, Wz.UIData, Wz.UIImageLib);
         int PicWidth, PicHeight;
         var Canvas = EngineFunc.Canvas;
@@ -179,7 +182,8 @@ public class MiniMap : UIForm
             cx = Map.Img.GetInt("miniMap/centerX");
             cy = Map.Img.GetInt("miniMap/centerY");
             var MiniMapNode = Map.Img.GetNode("miniMap");
-            Wz.DumpData(MiniMapNode, Wz.UIData, Wz.UIImageLib);
+            if (MiniMapNode != null && !Wz.UIData.ContainsKey(MiniMapNode.FullPathToFile2()))
+                Wz.DumpData(MiniMapNode, Wz.UIData, Wz.UIImageLib);
             var MiniMapPng = Map.Img.GetBmp("miniMap/canvas");
             int canvasW = MiniMapPng?.Width ?? 0;
 
@@ -239,7 +243,8 @@ public class MiniMap : UIForm
             var MinimapNode = Wz.GetNode("Map/MapHelper.img/minimap");
             if (MinimapNode != null)
             {
-                Wz.DumpData(MinimapNode, Wz.UIData, Wz.UIImageLib);
+                if (!Wz.UIData.ContainsKey(MinimapNode.FullPathToFile2()))
+                    Wz.DumpData(MinimapNode, Wz.UIData, Wz.UIImageLib);
                 var NpcMark = Wz.GetNode("Map/MapHelper.img/minimap/npc");
                 if (Map.Img.HasNode("life"))
                 {
@@ -285,7 +290,8 @@ public class MiniMap : UIForm
             var MapMarkPic = Wz.GetNode("Map/MapHelper.img/mark/" + MapMarkName);
             if (MapMarkPic != null)
             {
-                Wz.DumpData(MapMarkPic, Wz.UIData, Wz.UIImageLib);
+                if (!Wz.UIData.ContainsKey(MapMarkPic.FullPathToFile2()))
+                    Wz.DumpData(MapMarkPic, Wz.UIData, Wz.UIImageLib);
                 DrawImage(MapMarkPic, 7, 22);
             }
         }
@@ -311,7 +317,8 @@ public class MiniMap : UIForm
             cx = Map.Img.GetInt("miniMap/centerX");
             cy = Map.Img.GetInt("miniMap/centerY");
             var MiniMapNode = Map.Img.GetNode("miniMap");
-            Wz.DumpData(MiniMapNode, Wz.UIData, Wz.UIImageLib);
+            if (MiniMapNode != null && !Wz.UIData.ContainsKey(MiniMapNode.FullPathToFile2()))
+                Wz.DumpData(MiniMapNode, Wz.UIData, Wz.UIImageLib);
             var MiniMapPng = Map.Img.GetBmp("miniMap/canvas");
             int canvasW = MiniMapPng?.Width ?? 0;
 
@@ -361,7 +368,7 @@ public class MiniMap : UIForm
         }
 
         var MinimapNode = Wz.GetNode("Map/MapHelper.img/minimap");
-        if (MinimapNode != null)
+        if (MinimapNode != null && !Wz.UIData.ContainsKey(MinimapNode.FullPathToFile2()))
             Wz.DumpData(MinimapNode, Wz.UIData, Wz.UIImageLib);
 
         var NpcMark = Wz.GetNodeA("Map/MapHelper.img/minimap/npc");
@@ -392,7 +399,8 @@ public class MiniMap : UIForm
             var MapMarkPic = Wz.GetNodeA("Map/MapHelper.img/mark/" + MapMarkName);
             if (MapMarkPic != null)
             {
-                Wz.DumpData(MapMarkPic, Wz.UIData, Wz.UIImageLib);
+                if (!Wz.UIData.ContainsKey(MapMarkPic.FullPathToFile2()))
+                    Wz.DumpData(MapMarkPic, Wz.UIData, Wz.UIImageLib);
                 DrawImage(MapMarkPic, 7, 17);
             }
         }

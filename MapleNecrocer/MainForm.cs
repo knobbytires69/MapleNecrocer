@@ -78,24 +78,27 @@ public partial class MainForm : Form
         }
     }
     
-    private async void AutoLoadWz(string maplePath)
+    private async Task AutoLoadWz(string maplePath)
     {
-        if (string.IsNullOrEmpty(maplePath) || !System.IO.Directory.Exists(maplePath))
-        {
-            var msg = $"MapleStory path does not exist: {maplePath}";
-            WriteError(msg);
-            MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            return;
-        }
-
         this.UseWaitCursor = true;
         try
         {
+            if (string.IsNullOrEmpty(maplePath) || !System.IO.Directory.Exists(maplePath))
+            {
+                var msg = $"MapleStory path does not exist: {maplePath}";
+                WriteError(msg);
+                MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
             List<string> findBaseWz;
             try
             {
                 findBaseWz = await Task.Run(() =>
-                    SelectFolderForm.Directory.EnumerateFiles(maplePath, "Base.wz;Data.wz").ToList());
+                {
+                    var wzFile = SelectFolderForm.Directory.FindMapleWz(maplePath);
+                    return wzFile != null ? new List<string> { wzFile } : new List<string>();
+                });
             }
             catch (Exception ex)
             {
@@ -154,14 +157,21 @@ public partial class MainForm : Form
             this.UseWaitCursor = false;
         }
     }
-    void WriteError(string message)
+    static readonly object ErrorLogLock = new object();
+    public static void WriteError(string message)
     {
         try
         {
             string logPath = System.IO.Path.Combine(System.Windows.Forms.Application.StartupPath, "error.log");
-            System.IO.File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}\n");
+            lock (ErrorLogLock)
+            {
+                System.IO.File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}\n");
+            }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to write error log: {ex.Message}");
+        }
     }
     public static RenderForm RenderForm = new RenderForm();
     List<Wz_Structure> openedWz;
@@ -508,6 +518,8 @@ public partial class MainForm : Form
     {
         foreach (var Iter in this.openedWz)
             Iter.Clear();
+        Wz.UIData.Clear();
+        Wz.UIImageLib.Clear();
     }
 
     enum DefaultLevel

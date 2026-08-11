@@ -27,10 +27,14 @@ internal static class Program
 
     static string ResolveMaplePath(string[] args)
     {
-        for (int i = 0; i < args.Length - 1; i++)
+        for (int i = 0; i < args.Length; i++)
         {
-            if (args[i] == "--maplePath")
-                return args[i + 1];
+            if (args[i] == "--maplePath" && i + 1 < args.Length && !args[i + 1].StartsWith("--"))
+            {
+                var path = args[i + 1];
+                if (!string.IsNullOrWhiteSpace(path) && System.IO.Directory.Exists(path))
+                    return path;
+            }
         }
 
         var envPath = System.Environment.GetEnvironmentVariable("MAPLESTORY_PATH");
@@ -63,7 +67,10 @@ internal static class AppSettings
             IsMute = data.IsMute;
             MaplePath = data.MaplePath ?? "";
         }
-        catch { }
+        catch (Exception ex)
+        {
+            MainForm.WriteError($"AppSettings.Load failed: {ex}");
+        }
     }
 
     public static void Save()
@@ -74,7 +81,10 @@ internal static class AppSettings
             string json = JsonSerializer.Serialize(data);
             System.IO.File.WriteAllText(FilePath, json);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            MainForm.WriteError($"AppSettings.Save failed: {ex}");
+        }
     }
 
     private class SettingsData

@@ -2,6 +2,78 @@
 
 All notable changes are recorded here. Entries below the latest release note are working-tree changes.
 
+## (2026-08-10) - Code Review Fix Pass
+
+### Goal
+Apply the actionable findings from the PR review: harden the async startup load, make
+WZ file discovery deterministic (prefer `Base.wz`), fix the fragile CLI path parsing,
+avoid per-frame WZ re-dumping in the minimap, and stop silently swallowing settings/log
+failures.
+
+### Async startup load hardening
+
+- **`MapleNecrocer/MainForm.cs`**
+  - `AutoLoadWz` changed from `async void` to `async Task`, and the path-existence check
+    moved inside the outer `try`/`catch`/`finally`, so no unobserved exception can escape
+    the method. Continuations still resume on the WinForms UI thread via the captured
+    `SynchronizationContext`; the heavy WZ parse remains on a background thread.
+  - WZ file discovery now prefers `Base.wz` first and only falls back to `Data.wz`, instead
+    of taking `First()` from an unordered `Base.wz;Data.wz` recursive enumeration.
+
+- **`MapleNecrocer/SelectFolderForm.cs`**
+  - Added `Directory.FindMapleWz(string)` which returns the first `Base.wz`, else the first
+    `Data.wz`, under the given folder. Both the folder-dialog load and the recent-files load
+    now use it instead of `EnumerateFiles("Base.wz;Data.wz").First()`, fixing the
+    Data.wz-before-Base.wz ambiguity.
+
+### CLI path parsing
+
+- **`MapleNecrocer/Program.cs`**
+  - `ResolveMaplePath` now iterates the full `args` array, requires `--maplePath` to have a
+    following non-flag argument, and only accepts the value when it is a non-empty existing
+    directory. A trailing `--maplePath` is no longer silently dropped.
+
+### Minimap per-frame re-dump eliminated
+
+- **`MapleNecrocer/Client/UI/MiniMap.cs`**
+  - Every `Wz.DumpData(...)` call in `DrawVersionAlpha`, `DrawVersion1`, and `DrawVersion3`
+    is now guarded by `if (!Wz.UIData.ContainsKey(node.FullPathToFile2()))`, so the UI image
+    library is populated once per node instead of every frame. This matches the existing
+    pattern already used for the `UI/UIWindow2.img/MiniMap/MaxMap` entry in `DrawVersion3`
+    and in `UI.Utils.cs`.
+  - Because the guards rely on the static `Wz.UIData`/`Wz.UIImageLib` caches, `RemoveWz`
+    now clears them so switching MapleStory WZ folders re-dumps the UI data instead of
+    leaving stale textures from the previous WZ.
+
+### Error/settings logging
+
+- **`MapleNecrocer/MainForm.cs`**
+  - `WriteError` is now `public static`, serialized with a `lock`, and its own catch writes
+    the failure to the debug output instead of being an empty `catch {}`.
+
+- **`MapleNecrocer/Program.cs`**
+  - `AppSettings.Load`/`Save` now route their caught exceptions through `MainForm.WriteError`
+    instead of silently swallowing them.
+
+### Verified as not actionable
+
+- **MiniMap `GetInt` null-safety** — `Map.Img.GetInt("miniMap/centerX")` is already safe:
+    it routes through `GetValueEx`, which returns the default for a null node. No change needed.
+- **`Music.Play` under mute** — already returns before constructing a player/preloading data;
+    `OptionForm` never un-mutes on first open. The muted-by-default behavior is intentional.
+
+### Deferred
+
+- Moving the pure WZ enumeration in `DumpMapIDs` to a background thread (UI can still freeze
+  briefly for very large map sets). Kept on the UI thread for now; grid updates are already
+  marshalled correctly and wrapped in try/catch.
+
+### Files modified
+- `MapleNecrocer/MainForm.cs`
+- `MapleNecrocer/SelectFolderForm.cs`
+- `MapleNecrocer/Program.cs`
+- `MapleNecrocer/Client/UI/MiniMap.cs`
+
 ## (2026-08-10) - Async WZ Load, Portable Maple Path & Minimap Perf
 
 ### Goal
@@ -162,6 +234,10 @@ logging for debugging.
   - Wrapped the constructor in a try-catch to log any initialization failures.
   - Set `this.WindowState = FormWindowState.Minimized` so the window opens minimized by
     default.
+    > Note: this was later superseded by the "Show Window on Startup" change below, which
+    > removed the assignment. The current `MainForm` constructor sets no `WindowState`, so
+    > the window opens `Normal`. These two historical entries intentionally document the
+    > intermediate flip; the final behavior is the normal startup window.
 
 ### Null-safe map ID dump
 

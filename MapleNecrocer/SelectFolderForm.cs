@@ -43,6 +43,17 @@ public partial class SelectFolderForm : Form
 
             yield break;
         }
+
+        public static string FindMapleWz(string directory)
+        {
+            foreach (string pattern in new[] { "Base.wz", "Data.wz" })
+            {
+                string found = EnumerateFiles(directory, pattern).FirstOrDefault();
+                if (found != null)
+                    return found;
+            }
+            return null;
+        }
     }
 
 
@@ -96,8 +107,8 @@ public partial class SelectFolderForm : Form
                 return;
             }
 
-            var FindBaseWz = Directory.EnumerateFiles(Dialog.SelectedPath, "Base.wz;Data.wz");
-            if (FindBaseWz.Count() >= 1)
+            var FindBaseWz = Directory.FindMapleWz(Dialog.SelectedPath);
+            if (FindBaseWz != null)
             {
                 this.Hide();
                 MainForm.Instance.RemoveWz();
@@ -106,7 +117,7 @@ public partial class SelectFolderForm : Form
                 var Font = new System.Drawing.Font(FontFamily.GenericSansSerif, 20, FontStyle.Bold);
                 Graphic.DrawString("Loading...", Font, Brushes.Black, 10, 50);
 
-                MainForm.OpenWZ(FindBaseWz.First());
+                MainForm.OpenWZ(FindBaseWz);
 
                 string StringPath = Wz.HasHardCodedStrings ? "Mob/0100100.img/info/name" : "String/Mob.img/100100/name";
                 
@@ -154,11 +165,11 @@ public partial class SelectFolderForm : Form
         Graphic.DrawString("Loading...", Font, Brushes.Black, 10, 50);
 
         var Path = RecentFilesGrid.Rows[e.RowIndex].Cells[0].Value.ToString();
-        var FindBaseWz = Directory.EnumerateFiles(Path, "Base.wz;Data.wz");
+        var FindBaseWz = Directory.FindMapleWz(Path);
         MainForm.Instance.RemoveWz();
 
-        if (FindBaseWz.Count() >= 1)
-            MainForm.OpenWZ(FindBaseWz.First());
+        if (FindBaseWz != null)
+            MainForm.OpenWZ(FindBaseWz);
         string StringPath = Wz.HasHardCodedStrings ? "Mob/0100100.img/info/name" : "String/Mob.img/100100/name";
         if (Wz.GetNode(StringPath).ToStr() == "Snail")
         {
